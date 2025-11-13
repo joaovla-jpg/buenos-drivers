@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, respondents as respondentsTable, Respondent } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,77 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Analysis queries for Buenos Drivers case
+export async function getAnalysisData() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const data = await db.select().from(respondentsTable);
+  return data;
+}
+
+export async function getCorrelationAnalysis() {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get all respondents
+  const data = await db.select().from(respondentsTable);
+  
+  // Calculate correlations between drivers and intention
+  const mappedData = data.map((r: Respondent) => ({
+    confidence: (r.indexConfidence || 0) / 100,
+    security: (r.indexSecurity || 0) / 100,
+    communication: (r.indexCommunication || 0) / 100,
+    aversion: (r.indexAversion || 0) / 100,
+    intention: (r.indexIntention || 0) / 100,
+  }));
+
+  // Calculate Pearson correlations
+  const correlations = {
+    confidence: calculateCorrelation(mappedData.map(d => d.confidence), mappedData.map(d => d.intention)),
+    security: calculateCorrelation(mappedData.map(d => d.security), mappedData.map(d => d.intention)),
+    communication: calculateCorrelation(mappedData.map(d => d.communication), mappedData.map(d => d.intention)),
+    aversion: calculateCorrelation(mappedData.map(d => d.aversion), mappedData.map(d => d.intention)),
+  };
+
+  return correlations;
+}
+
+export async function getSegmentationAnalysis() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const data = await db.select().from(respondentsTable);
+  
+  // Segment by intention (high >= 5.0, low < 5.0)
+  const highIntention = data.filter((r: Respondent) => (r.indexIntention || 0) >= 500);
+  const lowIntention = data.filter((r: Respondent) => (r.indexIntention || 0) < 500);
+
+  return {
+    highIntention: {
+      count: highIntention.length,
+      avgConfidence: highIntention.reduce((sum: number, r: Respondent) => sum + (r.indexConfidence || 0), 0) / highIntention.length / 100,
+      avgSecurity: highIntention.reduce((sum: number, r: Respondent) => sum + (r.indexSecurity || 0), 0) / highIntention.length / 100,
+      avgCommunication: highIntention.reduce((sum: number, r: Respondent) => sum + (r.indexCommunication || 0), 0) / highIntention.length / 100,
+    },
+    lowIntention: {
+      count: lowIntention.length,
+      avgConfidence: lowIntention.reduce((sum: number, r: Respondent) => sum + (r.indexConfidence || 0), 0) / lowIntention.length / 100,
+      avgSecurity: lowIntention.reduce((sum: number, r: Respondent) => sum + (r.indexSecurity || 0), 0) / lowIntention.length / 100,
+      avgCommunication: lowIntention.reduce((sum: number, r: Respondent) => sum + (r.indexCommunication || 0), 0) / lowIntention.length / 100,
+    },
+  };
+}
+
+// Helper function to calculate Pearson correlation
+function calculateCorrelation(x: number[], y: number[]): number {
+  const n = x.length;
+  const meanX = x.reduce((a: number, b: number) => a + b) / n;
+  const meanY = y.reduce((a: number, b: number) => a + b) / n;
+  
+  const numerator = x.reduce((sum: number, xi: number, i: number) => sum + (xi - meanX) * (y[i] - meanY), 0);
+  const denominatorX = Math.sqrt(x.reduce((sum: number, xi: number) => sum + Math.pow(xi - meanX, 2), 0));
+  const denominatorY = Math.sqrt(y.reduce((sum: number, yi: number) => sum + Math.pow(yi - meanY, 2), 0));
+  
+  return numerator / (denominatorX * denominatorY);
+}
