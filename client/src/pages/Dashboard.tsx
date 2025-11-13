@@ -12,18 +12,21 @@ export default function Dashboard() {
       description: "Estatísticas descritivas e distribuição dos dados",
       path: "/analysis",
       icon: "📊",
+      id: "analysis",
     },
     {
       title: "Drivers de Intenção",
       description: "Correlação entre fatores e intenção de uso",
-      path: "/segmentation",
+      path: "/analysis",
       icon: "🎯",
+      id: "drivers",
     },
     {
       title: "Segmentação",
       description: "Análise de segmentos por intenção de uso",
       path: "/segmentation",
       icon: "👥",
+      id: "segmentation",
     },
     {
       title: "Recomendações",
@@ -75,7 +78,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sections.map((section) => (
             <Card
-              key={section.path}
+              key={section.id}
               className="bg-white hover:shadow-lg transition-shadow cursor-pointer border-0"
               onClick={() => navigate(section.path)}
             >
