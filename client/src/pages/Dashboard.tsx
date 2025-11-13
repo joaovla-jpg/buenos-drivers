@@ -108,15 +108,15 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
+                <div key="insight-confidence" className="text-center">
                   <div className="text-4xl font-bold text-blue-600">0.65</div>
                   <p className="text-gray-600 mt-2">Correlação: Confiança → Intenção</p>
                 </div>
-                <div className="text-center">
+                <div key="insight-intention" className="text-center">
                   <div className="text-4xl font-bold text-green-600">50.5%</div>
                   <p className="text-gray-600 mt-2">Respondentes com Alta Intenção</p>
                 </div>
-                <div className="text-center">
+                <div key="insight-communication" className="text-center">
                   <div className="text-4xl font-bold text-purple-600">2.2</div>
                   <p className="text-gray-600 mt-2">Gap: Comunicação (maior oportunidade)</p>
                 </div>
